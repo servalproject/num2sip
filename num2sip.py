@@ -18,7 +18,7 @@ def main():
     if not conf.has_option('general', 'ip') or not conf.has_option('general', 'dbpath'):
         print >>sys.stderr, "Configuration file doesn't have ip and dbpath"
         sys.exit(1)
-    ip = conf.get('general', 'ip')
+    myip = conf.get('general', 'ip')
     dbpath = conf.get('general', 'dbpath')
 
     try:
@@ -28,6 +28,7 @@ def main():
         sys.exit(1)
 
     c = db.cursor()
+    print "STARTED"
     while True:
         line = sys.stdin.readline().strip()
         if line == "":
