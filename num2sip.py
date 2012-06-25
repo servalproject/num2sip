@@ -34,9 +34,16 @@ def main():
         if line == "":
             # EOF detection is broken :(
             break
-        c.execute('SELECT dial FROM dialdata_table WHERE exten = ?', (line, ))
+        s = line.split('|')
+        if len(s) != 3:
+            print "ERROR"
+            continue
+        (token, number, xxx) = s
+
+        c.execute('SELECT dial FROM dialdata_table WHERE exten = ?', (number, ))
         for r in c:
-            print "sip://%s@%s" % (r[0], myip)
+            
+            print "%s|sip://%s@%s|%s|%s|" % (token, r[0], myip, number, "")
         print "DONE"
         
 if __name__ == "__main__":
