@@ -1,4 +1,4 @@
-#!/usr/bin/env python -u
+#!/usr/bin/python -u
 
 # The -u above is to make stdout & stderr unbuffered & binary
 #
@@ -25,10 +25,12 @@
 # This program is run by servald to look up DIDs in the OpenBTS SQLITE3 DB.
 #
 import ConfigParser
+import os
 import sqlite3
 import sys
 
 dbgfh = file('/dev/null', 'a', 0)
+#dbgfh = sys.stderr
 
 def main():
     dbgfh.write('Started\n')
@@ -44,11 +46,24 @@ def main():
         print >>sys.stderr, "Unable to read configuration"
         sys.exit(1)
 
-    if not conf.has_option('general', 'ip') or not conf.has_option('general', 'dbpath'):
+    if not conf.has_option('general', 'dbpath'):
         dbgfh.write('Config bad\n')
         print >>sys.stderr, "Configuration file doesn't have ip and dbpath"
         sys.exit(1)
-    myip = conf.get('general', 'ip')
+
+    myip = None
+    mysid = None
+    
+    if conf.has_option('general', 'ip'):
+        myip = conf.get('general', 'ip')
+
+    if 'MYSID' in os.environ:
+        mysid = os.environ['MYSID']
+
+    if mysid == None and myip == None:
+        print >>sys.stderr, "MYSID must be set in the environment or the ip option must be set in the configuration"
+        sys.exit(1)
+
     dbpath = conf.get('general', 'dbpath')
 
     dbgfh.write('Opening DB\n')
@@ -71,14 +86,17 @@ def main():
             break
         s = line.split('|')
         if len(s) != 3:
-            dbgfh.write('Had %d elements, expected %d\n', len(s), 3)
+            dbgfh.write('Had %d elements, expected %d\n' % (len(s), 3))
             print "ERROR"
             continue
         (token, number, xxx) = s
         dbgfh.write('Looking up %s\n' % (number))
         c.execute('SELECT dial FROM dialdata_table WHERE exten = ?', (number, ))
         for r in c:
-            print "%s|sip://%s@%s|%s|%s|" % (token, r[0], myip, number, "")
+            if myip != None:
+                print "%s|sip://%s@%s|%s|%s|" % (token, r[0], myip, number, "")
+            if mysid != None:
+                print "%s|sid://%s/%s|%s|%s|" % (token, mysid, number, number, "")
         print "DONE"
         
 if __name__ == "__main__":
